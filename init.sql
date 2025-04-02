@@ -30,3 +30,13 @@ CREATE TABLE IF NOT EXISTS embeddings (
 COPY users FROM 'data/users.csv' DELIMITER ',' CSV HEADER;
 COPY embeddings FROM 'data/embeddings.csv' DELIMITER ',' CSV HEADER;
 COPY images FROM 'data/images.csv' DELIMITER ',' CSV HEADER;
+
+-- Đặt giá trị tiếp theo cho bảng images
+SELECT setval('images_id_seq', COALESCE((SELECT MAX(id) FROM images), 0) + 1, false);
+
+-- Đặt giá trị tiếp theo cho bảng users
+SELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 0) + 1, false);
+
+-- Đặt giá trị tiếp theo cho bảng embeddings
+SELECT setval('embeddings_id_seq', COALESCE((SELECT MAX(id) FROM embeddings), 0) + 1, false);
+

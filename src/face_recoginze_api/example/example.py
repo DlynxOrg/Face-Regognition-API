@@ -8,7 +8,7 @@ recognize_face = {
                         "status": "Succeed",
                         "message": "Found a face matches the given data",
                         "code": 200,
-                        "data": {"face_id": 123, "similarity": 0.95}
+                        "data": {"id": 123, "username": "John Doe"}
                     }
                 }
             }
