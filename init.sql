@@ -40,3 +40,4 @@ SELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 0) + 1, fals
 -- Đặt giá trị tiếp theo cho bảng embeddings
 SELECT setval('embeddings_id_seq', COALESCE((SELECT MAX(id) FROM embeddings), 0) + 1, false);
 
+SELECT setval('arcface_embeddings_id_seq', COALESCE((SELECT MAX(id) FROM arcface_embeddings), 0) + 1 , false);
