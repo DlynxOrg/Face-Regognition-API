@@ -18,3 +18,8 @@ class ErrorType(Enum):
 class STATUS(Enum):
     SUCCEED = "Succeed"
     FAILED = "Failed"
+
+ALLOWED_IMAGE_TYPES = {
+    "image/jpeg", "image/png", "image/gif", "image/bmp",
+    "image/webp"
+}

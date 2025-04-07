@@ -13,8 +13,8 @@ from face_recoginze_api.repositories.user_repository import UserRepository
 from face_recoginze_api.repositories.embedding_repository import EmbeddingRepository
 from face_recoginze_api.repositories.image_repository import ImageRepository
 import insightface
-class FaceRecognizeService:
 
+class ArcFaceRecognizeService:
     def __init__(self):
 
         self.image_service = ImageService()
@@ -30,7 +30,7 @@ class FaceRecognizeService:
         self.image_repository = ImageRepository()
 
     async def init_faiss_index(self, db_session: AsyncSession):
-        embeddings = await self.embedding_repository.get_with_users(db_session)
+        embeddings = await self.embedding_repository.get_arcface_with_users(db_session)
         if len(embeddings) > 0:
             self.labels = np.array([e.user_id for e in embeddings])  
             self.vectors = np.array([np.array(e.vector, dtype=np.float32) for e in embeddings])
@@ -43,18 +43,18 @@ class FaceRecognizeService:
             # Ánh xạ chỉ số FAISS -> tên người
             self.index_to_name = {i: name for i, name in enumerate(self.labels)}
         
-    async def recognize_face_faiss(self, db: AsyncSession, image_id, top_k=5, threshold=1.0) -> tuple[str, UserDTO]:
+    async def recognize_face_faiss_arcface(self, db: AsyncSession, image_id, top_k=5, threshold=1.0) -> tuple[str, UserDTO]:
         """
         Tìm người gần nhất với face_vector bằng FAISS.
         Nếu khoảng cách > threshold, trả về 'Unknown'.
         """
-        error, face_vector = await self.generate_face_embedding_from_image(db=db, image_id=image_id)
+        error, face_vector = await self.generate_face_embedding_from_image_arcface(db=db, image_id=image_id)
 
         if error:
             return error, None
 
         face_vector = np.array(face_vector).astype('float32').reshape(1, -1)
-        D, I = self.index.search(face_vector, top_k)
+        D, I = self.index_arcface.search(face_vector, top_k)
         
         best_index = I[0][0]
         best_distance = D[0][0]
@@ -66,7 +66,8 @@ class FaceRecognizeService:
         user = await self.user_repository.get_by_id(db = db, user_id=predicted_user_id)
         return None, UserDTO(id = user.id, username=user.name)
     
-    async def generate_face_embedding_from_image(self, image_id: int, db: AsyncSession):
+
+    async def generate_face_embedding_from_image_arcface(self, image_id: int, db: AsyncSession):
         error, img_content = await self.image_service.read_img_by_id(image_id=image_id, db=db)
         if error:
             return error, None
@@ -90,14 +91,15 @@ class FaceRecognizeService:
             print(results)
             x, y, w, h = results[0]['box']
             face_img = frame[y: y+h, x: x+w]
-            face_img = cv.resize(face_img, (160, 160))
-            face_img = np.expand_dims(face_img, axis=0)
-            embedding = self.facenet.embeddings(face_img)
+            # face_img = cv.resize(face_img, (160, 160))
+            # face_img = np.expand_dims(face_img, axis=0)
+            # embedding = self.facenet.embeddings(face_img)
+            embedding = self.arcface.get(face_img)
             return None, embedding
         return ErrorType.NO_FACE_DETECED.value, None
-    
+
     async def validate_face(self, image_id: int, db_session: AsyncSession) -> str:
-        error, embedding = await self.generate_face_embedding_from_image(image_id=image_id, db=db_session)
+        error, embedding = await self.generate_face_embedding_from_image_arcface(image_id=image_id, db=db_session)
         if error: 
             return error
         return None
@@ -111,7 +113,7 @@ class FaceRecognizeService:
         return None
             
     async def validate_user_data(self, user_id: int, image_id: int, db_session: AsyncSession) -> str:
-        error, userDTO = await self.recognize_face_faiss(db=db_session, image_id=image_id)
+        error, userDTO = await self.recognize_face_faiss_arcface(db=db_session, image_id=image_id)
         if not error and userDTO.id != user_id:
             return ErrorType.USER_FACE_NOT_MATCH.value
         return None
@@ -128,12 +130,12 @@ class FaceRecognizeService:
             is_embedding_exist = await self.embedding_repository.get_id_by_user_and_image(db=db, user_id=data.user_id, image_id=metadata.id)
             if is_embedding_exist:
                 return ErrorType.IMAGE_HAS_BEEN_USED.value
-            error, embedding = await self.generate_face_embedding_from_image(image_id=data.image.image_id, db=db)
+            error, embedding = await self.generate_face_embedding_from_image_arcface(image_id=data.image.image_id, db=db)
             if error:
                 return error
             embedding = embedding.flatten().tolist()  
             await self.add_to_faiss_index(user_id=data.user_id, vector=embedding)  
-            return await self.embedding_repository.add(db=db, vector=embedding, image_id=data.image.image_id, user_id=data.user_id)
+            return await self.embedding_repository.add_arcface(db=db, vector=embedding, image_id=data.image.image_id, user_id=data.user_id)
 
         return ErrorType.IMAGE_NOT_VALIDATE.value
 

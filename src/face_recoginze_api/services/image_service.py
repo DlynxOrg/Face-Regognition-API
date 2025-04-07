@@ -1,26 +1,22 @@
 import cv2 as cv
 import numpy as np
 from fastapi import UploadFile, HTTPException
-import shutil
 import os
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
-from face_recoginze_api.models.models import Image
-from face_recoginze_api.repositories.repositories import save_image_metadata, get_metadata_by_id, delete_metadata_by_id
-from typing import AsyncGenerator
 import aiofiles
 from face_recoginze_api.DTOs.dtos import ImageMetadata
-from fastapi import Depends
-from enum import Enum
 from face_recoginze_api.enums.enums import ReadFileError, ErrorType
 import asyncio
 from pathlib import Path
+from face_recoginze_api.repositories.image_repository import ImageRepository
 
 class ImageService:
     SAVE_DIR = "src/images"
 
     def __init__(self):
-        os.makedirs(self.SAVE_DIR, exist_ok=True) 
+        os.makedirs(self.SAVE_DIR, exist_ok=True)
+        self.image_repository = ImageRepository()
 
     def read_image(self, file: UploadFile):
         
@@ -40,7 +36,7 @@ class ImageService:
         try:
             async with aiofiles.open(file_path, "wb") as buffer:
                 await buffer.write(await file.read())  # Đọc và ghi file async
-                return await save_image_metadata(db, file, file_path)  # Lưu thông tin file vào database
+                return await self.image_repository.save_metadata(db, file, file_path)  # Lưu thông tin file vào database
                 # Trả về đường dẫn file đã lưu
         except Exception as e:
             print(f"An error occur while trying to save file: {e}")
@@ -48,7 +44,7 @@ class ImageService:
         return None
     
     async def read_img_by_id(self, image_id, db: AsyncSession):
-        metatada = await get_metadata_by_id(session=db, image_id=image_id)
+        metatada = await self.image_repository.get_by_id(db=db, image_id=image_id)
         try:
             if metatada:
                 storage_path = Path(metatada.storage_path).as_posix()
@@ -65,13 +61,13 @@ class ImageService:
             return ErrorType.INTERNAL_SERVER_ERROR.value  # Lỗi không xác định
         
     async def delete_img_by_id(self, image_id, db: AsyncSession):
-        metadata = await get_metadata_by_id(session=db, image_id=image_id)
+        metadata = await self.image_repository.get_by_id(db=db, image_id=image_id)
         try:
             if metadata:
                 storage_path = metadata.storage_path
                 if not metadata.is_validate:
                     await asyncio.to_thread(os.remove, storage_path)  # Xóa file async-friendly
-                    await delete_metadata_by_id(session=db, image_id=image_id)
+                    await self.image_repository.delete_by_id(session=db, image_id=image_id)
                 return None  # Xóa thành công
             return ReadFileError.METADATA_NOT_FOUND.value  # Không tìm thấy file
         except FileNotFoundError:

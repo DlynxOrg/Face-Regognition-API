@@ -30,3 +30,13 @@ class Embedding(SQLModel, table=True):
     user_id: int = Field(sa_column=Column(ForeignKey("users.id", ondelete="CASCADE")))
     image_id: int = Field(sa_column=Column(ForeignKey("images.id", ondelete="CASCADE")))
 
+class ArcFaceEmbedding(SQLModel, table=True):
+    __tablename__ = "arcface_embeddings"
+
+    id: int = Field(primary_key=True)
+    vector: list[float] = Field(
+        sa_column=Column(Vector(512))
+    )
+    user_id: int = Field(sa_column=Column(ForeignKey("users.id", ondelete="CASCADE")))
+    image_id: int = Field(sa_column=Column(ForeignKey("images.id", ondelete="CASCADE")))
+

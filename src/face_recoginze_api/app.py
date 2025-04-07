@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends
-from face_recoginze_api.routers import images, faces, users
+from face_recoginze_api.routers import images, faces, users, arcface
 from fastapi.middleware.cors import CORSMiddleware
 from face_recoginze_api.database.database import Database
 from contextlib import asynccontextmanager
@@ -33,8 +33,14 @@ app.add_middleware(
 
 app.include_router(
     faces.router,
-    prefix="/face",
-    tags=["face"],
+    prefix="/facenet",
+    tags=["facenet"],
+)
+
+app.include_router(
+    faces.router,
+    prefix="/arcface",
+    tags=["arcface"],
 )
 
 app.include_router(

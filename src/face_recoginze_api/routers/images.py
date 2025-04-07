@@ -5,14 +5,11 @@ from face_recoginze_api.database.database import Database
 from typing import Annotated
 from face_recoginze_api.enums.enums import STATUS
 from face_recoginze_api.example.example import upload_image
+from face_recoginze_api.enums.enums import ALLOWED_IMAGE_TYPES
 router = APIRouter()
 
-ALLOWED_IMAGE_TYPES = {
-    "image/jpeg", "image/png", "image/gif", "image/bmp",
-    "image/webp"
-}
 
-@router.post("/image/", responses=upload_image)
+@router.post("/", responses=upload_image)
 async def upload_image(image_service: Annotated[ImageService, Depends(ImageService)], 
                        db: Annotated[Database, Depends(Database)],
                        file: UploadFile = File(...)):

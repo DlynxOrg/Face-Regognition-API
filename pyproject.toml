@@ -27,7 +27,10 @@ dependencies = [
     "sqlmodel>=0.0.23",
     "tensorflow>=2.18.0",
     "uvicorn>=0.34.0",
-    "opencv-python-headless>=4.11.0.86"
+    "opencv-python-headless>=4.11.0.86",
+    "astropy>=7.0.1",
+    "insightface>=0.7.3",
+    "onnxruntime>=1.21.0",
 ]
 
 [project.scripts]
