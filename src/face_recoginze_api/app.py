@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends
-from face_recoginze_api.routers import images, faces, users, arcface
+from face_recoginze_api.routers import images, faces, users, arcface, credit_classes
 from fastapi.middleware.cors import CORSMiddleware
 from face_recoginze_api.database.database import Database
 from contextlib import asynccontextmanager
@@ -38,7 +38,7 @@ app.include_router(
 )
 
 app.include_router(
-    faces.router,
+    arcface.router,
     prefix="/arcface",
     tags=["arcface"],
 )
@@ -56,6 +56,11 @@ app.include_router(
     tags=["image"]
 )
 
+app.include_router(
+    credit_classes.router,
+    prefix="/credit-class", 
+    tags=["credit class"]
+)
 
 @app.get("/")
 async def root():

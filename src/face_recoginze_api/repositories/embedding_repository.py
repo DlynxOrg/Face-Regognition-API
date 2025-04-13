@@ -61,3 +61,11 @@ class EmbeddingRepository:
         )
         result = await db.execute(statement)
         return result.scalar_one_or_none()
+    
+    async def get_id_by_user_and_image_arcface(self, db: AsyncSession, user_id: int, image_id: int) -> int | None:
+        statement = select(ArcFaceEmbedding.id).where(
+            ArcFaceEmbedding.user_id == user_id,
+            ArcFaceEmbedding.image_id == image_id
+        )
+        result = await db.execute(statement)
+        return result.scalar_one_or_none()

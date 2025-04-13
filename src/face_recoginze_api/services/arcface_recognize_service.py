@@ -19,9 +19,7 @@ class ArcFaceRecognizeService:
 
         self.image_service = ImageService()
         self.detector = MTCNN()
-        self.facenet = FaceNet()
         self.index = None
-        self.index_arcface = None
         self.index_to_name = {}
         self.arcface = insightface.app.FaceAnalysis()
         self.arcface.prepare(ctx_id=-1)
@@ -42,6 +40,8 @@ class ArcFaceRecognizeService:
 
             # Ánh xạ chỉ số FAISS -> tên người
             self.index_to_name = {i: name for i, name in enumerate(self.labels)}
+            print(f"FAISS index now contains {self.index.ntotal} vectors")
+            print(f"FAISS index dimension: {self.index.d}")
         
     async def recognize_face_faiss_arcface(self, db: AsyncSession, image_id, top_k=5, threshold=1.0) -> tuple[str, UserDTO]:
         """
@@ -54,7 +54,8 @@ class ArcFaceRecognizeService:
             return error, None
 
         face_vector = np.array(face_vector).astype('float32').reshape(1, -1)
-        D, I = self.index_arcface.search(face_vector, top_k)
+        
+        D, I = self.index.search(face_vector, top_k)
         
         best_index = I[0][0]
         best_distance = D[0][0]
@@ -88,13 +89,14 @@ class ArcFaceRecognizeService:
             return ErrorType.INTERNAL_SERVER_ERROR.value
             
         if results:
-            print(results)
-            x, y, w, h = results[0]['box']
-            face_img = frame[y: y+h, x: x+w]
+            # x, y, w, h = results[0]['box']
+            # face_img = frame[y: y+h, x: x+w]
             # face_img = cv.resize(face_img, (160, 160))
             # face_img = np.expand_dims(face_img, axis=0)
             # embedding = self.facenet.embeddings(face_img)
-            embedding = self.arcface.get(face_img)
+            embedding = self.arcface.get(frame_rgb)
+            embedding = embedding[0].embedding
+            print(embedding)
             return None, embedding
         return ErrorType.NO_FACE_DETECED.value, None
 
@@ -127,7 +129,7 @@ class ArcFaceRecognizeService:
         if not metadata:
             return ReadFileError.METADATA_NOT_FOUND.value
         if metadata.is_validate:
-            is_embedding_exist = await self.embedding_repository.get_id_by_user_and_image(db=db, user_id=data.user_id, image_id=metadata.id)
+            is_embedding_exist = await self.embedding_repository.get_id_by_user_and_image_arcface(db=db, user_id=data.user_id, image_id=metadata.id)
             if is_embedding_exist:
                 return ErrorType.IMAGE_HAS_BEEN_USED.value
             error, embedding = await self.generate_face_embedding_from_image_arcface(image_id=data.image.image_id, db=db)

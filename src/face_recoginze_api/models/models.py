@@ -2,6 +2,8 @@ from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlmodel import Field, Session, SQLModel, create_engine, select, ForeignKey
 from pgvector.sqlalchemy import Vector
+from datetime import datetime, timezone
+
 
 Base = declarative_base()
 
@@ -40,3 +42,15 @@ class ArcFaceEmbedding(SQLModel, table=True):
     user_id: int = Field(sa_column=Column(ForeignKey("users.id", ondelete="CASCADE")))
     image_id: int = Field(sa_column=Column(ForeignKey("images.id", ondelete="CASCADE")))
 
+class CreditClass(SQLModel, table=True):
+    __tablename__ = "credit_classes"
+
+    id: int = Field(primary_key=True)
+    name: str = Field(nullable=False)
+
+class AttendanceRecord(SQLModel, table=True):
+    __tablename__ = "attendance_records"
+    id: int = Field(primary_key=True)
+    user_id: int = Field(sa_column=Column(ForeignKey("users.id", ondelete="CASCADE")))
+    class_id: int = Field(sa_column=Column(ForeignKey("credit_classes.id", ondelete="CASCADE")))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), nullable=False)

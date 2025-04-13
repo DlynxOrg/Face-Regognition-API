@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 from enum import Enum
 from typing import List
+from datetime import datetime
 
 class ResponseMessage(BaseModel):
     status: str
@@ -28,3 +29,16 @@ class ImageMetadata(BaseModel):
 class ValidateDTO(BaseModel):
     image: ImageMetadata
     user_id: int
+
+class AttendanceDTO(BaseModel):
+    id: int
+    username: str
+    class_name: str
+    timestamp: datetime
+
+class CreditClassCreate(BaseModel):
+    name: str
+
+class CreditClassRead(BaseModel):
+    id: int
+    name: str
