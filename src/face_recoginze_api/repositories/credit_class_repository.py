@@ -9,8 +9,8 @@ class CreditClassRepository:
 
     async def get_all(self) -> List[CreditClass]:
         statement = select(CreditClass)
-        result = await self.session.exec(statement)
-        return result.all()
+        result = await self.session.execute(statement)
+        return result.scalars().all()
 
     async def get_by_id(self, id: int) -> Optional[CreditClass]:
         return await self.session.get(CreditClass, id)

@@ -1,13 +1,17 @@
 from typing import List, Optional
 from face_recoginze_api.repositories.credit_class_repository import CreditClassRepository
 from face_recoginze_api.models.models import CreditClass
+from sqlmodel.ext.asyncio.session import AsyncSession
+from face_recoginze_api.DTOs.dtos import CreditClassRead
 
 class CreditClassService:
-    def __init__(self, repo: CreditClassRepository):
-        self.repo = repo
+    def __init__(self, session: AsyncSession):
+        self.repo = CreditClassRepository(session=session)
 
-    async def list_credit_classes(self) -> List[CreditClass]:
-        return await self.repo.get_all()
+    async def list_credit_classes(self) -> List[CreditClassRead]:
+        classes = await self.repo.get_all()
+        return [CreditClassRead.model_validate(cl) for cl in classes]
+
 
     async def get_credit_class(self, id: int) -> Optional[CreditClass]:
         return await self.repo.get_by_id(id)

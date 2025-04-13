@@ -1,26 +1,30 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, FastAPI
 from typing import List
-from sqlmodel.ext.asyncio.session import AsyncSession
-
+from contextlib import asynccontextmanager
 from face_recoginze_api.models.models import CreditClass
 from face_recoginze_api.DTOs.dtos import CreditClassCreate, CreditClassRead
 from face_recoginze_api.database.database import Database
 from face_recoginze_api.repositories.credit_class_repository import CreditClassRepository
 from face_recoginze_api.services.credit_class_service import CreditClassService
 
-router = APIRouter()
 database = Database()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global service
+    print("Khởi tạo lifespan trong faces")
+    async with database.get_session() as db_session:  # ✅ Dùng async with để lấy AsyncSession
+        service = CreditClassService(session=db_session)
+        yield  # Đợi FastAPI chạy app
+        service = None  # Cleanup khi app shutdown
 
-def get_service(session: AsyncSession = Depends(database.get_session)) -> CreditClassService:
-    repo = CreditClassRepository(session)
-    return CreditClassService(repo)
+router = APIRouter(lifespan=lifespan)
 
 @router.get("/", response_model=List[CreditClassRead])
-async def list_credit_classes(service: CreditClassService = Depends(get_service)):
+async def list_credit_classes():
     return await service.list_credit_classes()
 
 @router.get("/{id}", response_model=CreditClassRead)
-async def get_credit_class(id: int, service: CreditClassService = Depends(get_service)):
+async def get_credit_class(id: int):
     credit_class = await service.get_credit_class(id)
     if not credit_class:
         raise HTTPException(status_code=404, detail="Credit class not found")
@@ -28,16 +32,14 @@ async def get_credit_class(id: int, service: CreditClassService = Depends(get_se
 
 @router.post("/", response_model=CreditClassRead, status_code=status.HTTP_201_CREATED)
 async def create_credit_class(
-    data: CreditClassCreate,
-    service: CreditClassService = Depends(get_service)
+    data: CreditClassCreate
 ):
     return await service.create_credit_class(name=data.name)
 
 @router.put("/{id}", response_model=CreditClassRead)
 async def update_credit_class(
     id: int,
-    data: CreditClassCreate,
-    service: CreditClassService = Depends(get_service)
+    data: CreditClassCreate
 ):
     credit_class = await service.update_credit_class(id, name=data.name)
     if not credit_class:
@@ -45,7 +47,7 @@ async def update_credit_class(
     return credit_class
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_credit_class(id: int, service: CreditClassService = Depends(get_service)):
+async def delete_credit_class(id: int):
     deleted = await service.delete_credit_class(id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Credit class not found")

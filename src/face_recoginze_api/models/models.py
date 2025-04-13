@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
-from sqlmodel import Field, Session, SQLModel, create_engine, select, ForeignKey
+from sqlmodel import Field, Session, SQLModel, create_engine, select, ForeignKey, func
 from pgvector.sqlalchemy import Vector
 from datetime import datetime, timezone
 
@@ -53,4 +53,10 @@ class AttendanceRecord(SQLModel, table=True):
     id: int = Field(primary_key=True)
     user_id: int = Field(sa_column=Column(ForeignKey("users.id", ondelete="CASCADE")))
     class_id: int = Field(sa_column=Column(ForeignKey("credit_classes.id", ondelete="CASCADE")))
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), nullable=False)
+    timestamp: datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            nullable=False
+        )
+    )

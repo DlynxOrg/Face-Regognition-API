@@ -60,8 +60,8 @@ class ArcFaceRecognizeService:
         best_index = I[0][0]
         best_distance = D[0][0]
         
-        if best_distance > threshold:
-            return ErrorType.FACE_NOT_FOUND.value, None
+        # if best_distance > threshold:
+        #     return ErrorType.FACE_NOT_FOUND.value, None
         
         predicted_user_id = int(self.index_to_name[best_index])
         user = await self.user_repository.get_by_id(db = db, user_id=predicted_user_id)
@@ -96,7 +96,6 @@ class ArcFaceRecognizeService:
             # embedding = self.facenet.embeddings(face_img)
             embedding = self.arcface.get(frame_rgb)
             embedding = embedding[0].embedding
-            print(embedding)
             return None, embedding
         return ErrorType.NO_FACE_DETECED.value, None
 
