@@ -58,7 +58,3 @@ class AttendanceRecordRead(BaseModel):
     credit_class: CreditClassRead
 
     model_config = {"from_attributes": True}
-
-    @property
-    def timestamp(self) -> datetime:
-        return self.__dict__["timestamp"] + timedelta(hours=7)

@@ -10,12 +10,12 @@ from face_recoginze_api.enums.enums import ReadFileError, ErrorType
 import asyncio
 from pathlib import Path
 from face_recoginze_api.repositories.image_repository import ImageRepository
+from ..enums.enums import IMG_SAVE_DIR
 
 class ImageService:
-    SAVE_DIR = "src/images"
 
     def __init__(self):
-        os.makedirs(self.SAVE_DIR, exist_ok=True)
+        os.makedirs(IMG_SAVE_DIR, exist_ok=True)
         self.image_repository = ImageRepository()
 
     def read_image(self, file: UploadFile):
@@ -31,7 +31,7 @@ class ImageService:
     async def save_image(self, file: UploadFile, db: AsyncSession) -> ImageMetadata:
         ext = os.path.splitext(file.filename)[1]  # Lấy phần mở rộng file (.jpg, .png, ...)
         new_filename = f"{uuid.uuid4().hex}{ext}"  # Tạo tên mới bằng UUID
-        file_path = os.path.join(self.SAVE_DIR, new_filename)
+        file_path = os.path.join(IMG_SAVE_DIR, new_filename)
 
         try:
             async with aiofiles.open(file_path, "wb") as buffer:

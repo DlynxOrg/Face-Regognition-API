@@ -14,15 +14,20 @@ class AttendanceRepository:
         
         # Lấy thời gian hiện tại theo múi giờ Việt Nam
         timestamp_vn = datetime.now(vietnam_tz)
-
+        print(f"time_stamp VN = {timestamp_vn}")
+        
         # Tạo bản ghi mới với timestamp theo múi giờ Việt Nam
         new_record = AttendanceRecord(user_id=data.user_id, class_id=data.class_id, timestamp=timestamp_vn)
-        print(f"time_stamp VN = {timestamp_vn}")
         
         db.add(new_record)
         await db.commit()
         await db.refresh(new_record)
-        return new_record
+        stmt = select(AttendanceRecord).where(AttendanceRecord.id == new_record.id).options(
+            selectinload(AttendanceRecord.user),
+            selectinload(AttendanceRecord.credit_class)
+        )
+        result = await db.execute(stmt)
+        return result.scalars().first()
     
     async def get_all(self, db: AsyncSession):
         stmt = select(AttendanceRecord).options(

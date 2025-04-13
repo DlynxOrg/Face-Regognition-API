@@ -23,3 +23,6 @@ ALLOWED_IMAGE_TYPES = {
     "image/jpeg", "image/png", "image/gif", "image/bmp",
     "image/webp"
 }
+
+EXCEL_FILE_PATH = "src/sheets"
+IMG_SAVE_DIR = "src/images"
