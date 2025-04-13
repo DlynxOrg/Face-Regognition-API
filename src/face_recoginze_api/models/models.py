@@ -1,9 +1,9 @@
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
-from sqlmodel import Field, Session, SQLModel, create_engine, select, ForeignKey, func
+from sqlmodel import Field, Session, SQLModel, create_engine, select, ForeignKey, func, Relationship
 from pgvector.sqlalchemy import Vector
 from datetime import datetime, timezone
-
+from typing import Optional, TYPE_CHECKING, List
 
 Base = declarative_base()
 
@@ -21,6 +21,7 @@ class User(SQLModel, table=True):
 
     id: int = Field(primary_key=True)
     name: str = Field(nullable=False)
+    attendance_records: List["AttendanceRecord"] = Relationship(back_populates="user")
 
 class Embedding(SQLModel, table=True):
     __tablename__ = "embeddings"
@@ -47,6 +48,7 @@ class CreditClass(SQLModel, table=True):
 
     id: int = Field(primary_key=True)
     name: str = Field(nullable=False)
+    attendance_records: List["AttendanceRecord"] = Relationship(back_populates="credit_class")
 
 class AttendanceRecord(SQLModel, table=True):
     __tablename__ = "attendance_records"
@@ -60,3 +62,6 @@ class AttendanceRecord(SQLModel, table=True):
             nullable=False
         )
     )
+    user: Optional["User"] = Relationship(back_populates="attendance_records")
+    credit_class: Optional["CreditClass"] = Relationship(back_populates="attendance_records")
+

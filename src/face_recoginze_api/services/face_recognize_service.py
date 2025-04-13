@@ -51,7 +51,7 @@ class FaceRecognizeService:
             self.index_to_name = {i: user_id for i, user_id in enumerate(self.labels)}
 
         
-    async def recognize_face_faiss(self, db: AsyncSession, image_id, top_k=1, threshold=0.92) -> tuple[str, UserDTO]:
+    async def recognize_face_faiss(self, db: AsyncSession, image_id, top_k=1, threshold=0.8) -> tuple[str, UserDTO]:
         """
         Tìm người gần nhất với face_vector bằng cosine similarity (FAISS IndexFlatIP).
         Nếu độ tương đồng < threshold, trả về 'Unknown'.

@@ -48,7 +48,7 @@ class ArcFaceRecognizeService:
             # Ánh xạ chỉ số FAISS -> user_id
             self.index_to_name = {i: user_id for i, user_id in enumerate(self.labels)}
         
-    async def recognize_face_faiss_arcface(self, db: AsyncSession, image_id, top_k=1, threshold=0.92) -> tuple[str, UserDTO]:
+    async def recognize_face_faiss_arcface(self, db: AsyncSession, image_id, top_k=1, threshold=0.85) -> tuple[str, UserDTO]:
         """
         Tìm người gần nhất với face_vector bằng FAISS.
         Nếu khoảng cách > threshold, trả về 'Unknown'.

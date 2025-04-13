@@ -4,6 +4,7 @@ from face_recoginze_api.DTOs.dtos import AttendanceRecordCreate, AttendanceRecor
 from face_recoginze_api.services.attendance_service import AttendanceService
 from face_recoginze_api.repositories.attendance_repository import AttendanceRepository
 from face_recoginze_api.database.database import Database
+from typing import List
 
 router = APIRouter()
 database = Database()
@@ -16,3 +17,29 @@ async def create_attendance(
 ):
     async with db as session:
         return await attendance_service.create_attendance(db=session, data=data)
+
+
+@router.get("/", response_model=List[AttendanceRecordRead])
+async def get_all_attendance(
+    db: AsyncSession = Depends(database.get_session)
+):
+    async with db as session:
+        return await attendance_service.get_all_attendance(db=session)
+
+
+@router.get("/user/{user_id}", response_model=List[AttendanceRecordRead])
+async def get_attendance_by_user_id(
+    user_id: int,
+    db: AsyncSession = Depends(database.get_session)
+):
+    async with db as session:
+        return await attendance_service.get_attendance_by_user_id(db=session, user_id=user_id)
+
+
+@router.get("/class/{class_id}", response_model=List[AttendanceRecordRead])
+async def get_attendance_by_class_id(
+    class_id: int,
+    db: AsyncSession = Depends(database.get_session)
+):
+    async with db as session:
+        return await attendance_service.get_attendance_by_class_id(db=session, class_id=class_id)

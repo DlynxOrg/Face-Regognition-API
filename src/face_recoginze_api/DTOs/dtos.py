@@ -21,7 +21,9 @@ class EmbeddingDTO(BaseModel):
 
 class UserDTO(BaseModel):
     id: Optional[int] = None
-    username: str
+    name: str
+    class Config:
+        from_attributes = True
 
 class ImageMetadata(BaseModel):
     image_id: int
@@ -51,12 +53,12 @@ class AttendanceRecordCreate(BaseModel):
 
 class AttendanceRecordRead(BaseModel):
     id: int
-    user_id: int
-    class_id: int
     timestamp: datetime
+    user: UserDTO
+    credit_class: CreditClassRead
 
     model_config = {"from_attributes": True}
+
     @property
     def timestamp(self) -> datetime:
-        # Convert từ UTC sang giờ Việt Nam (UTC+7)
         return self.__dict__["timestamp"] + timedelta(hours=7)

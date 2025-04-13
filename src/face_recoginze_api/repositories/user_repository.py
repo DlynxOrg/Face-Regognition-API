@@ -10,12 +10,12 @@ class UserRepository:
         return result.scalar_one_or_none()
 
     async def get_by_dto(self, db: AsyncSession, dto: UserDTO) -> int | None:
-        result = await db.execute(select(User.id).where(User.name == dto.username))
+        result = await db.execute(select(User.id).where(User.name == dto.name))
         return result.scalar_one_or_none()
 
     async def add(self, db: AsyncSession, user_dto: UserDTO) -> int:
         try:
-            new_user = User(name=user_dto.username)
+            new_user = User(name=user_dto.name)
             db.add(new_user)
             await db.commit()
             await db.refresh(new_user)
