@@ -31,22 +31,30 @@ class FaceRecognizeService:
 
     async def init_faiss_index(self, db_session: AsyncSession):
         embeddings = await self.embedding_repository.get_with_users(db_session)
+
         if len(embeddings) > 0:
-            self.labels = np.array([e.user_id for e in embeddings])  
+            # Lấy labels và vectors
+            self.labels = np.array([e.user_id for e in embeddings])
             self.vectors = np.array([np.array(e.vector, dtype=np.float32) for e in embeddings])
 
-            # Khởi tạo FAISS Index
+            # Normalize vectors để dùng cosine similarity
+            faiss.normalize_L2(self.vectors)
+
+            # Khởi tạo FAISS Index dùng cosine similarity (inner product + normalized vectors)
             dimension = self.vectors.shape[1]
-            self.index = faiss.IndexHNSWFlat(dimension, 32)
+            self.index = faiss.IndexHNSWFlat(dimension, 32, faiss.METRIC_INNER_PRODUCT)
+
+            # Thêm vectors vào index
             self.index.add(self.vectors)
 
-            # Ánh xạ chỉ số FAISS -> tên người
-            self.index_to_name = {i: name for i, name in enumerate(self.labels)}
+            # Ánh xạ chỉ số FAISS -> user_id
+            self.index_to_name = {i: user_id for i, user_id in enumerate(self.labels)}
+
         
-    async def recognize_face_faiss(self, db: AsyncSession, image_id, top_k=5, threshold=1.0) -> tuple[str, UserDTO]:
+    async def recognize_face_faiss(self, db: AsyncSession, image_id, top_k=1, threshold=0.92) -> tuple[str, UserDTO]:
         """
-        Tìm người gần nhất với face_vector bằng FAISS.
-        Nếu khoảng cách > threshold, trả về 'Unknown'.
+        Tìm người gần nhất với face_vector bằng cosine similarity (FAISS IndexFlatIP).
+        Nếu độ tương đồng < threshold, trả về 'Unknown'.
         """
         error, face_vector = await self.generate_face_embedding_from_image(db=db, image_id=image_id)
 
@@ -54,17 +62,22 @@ class FaceRecognizeService:
             return error, None
 
         face_vector = np.array(face_vector).astype('float32').reshape(1, -1)
+        faiss.normalize_L2(face_vector)  # Normalize vector để dùng cosine similarity
+
         D, I = self.index.search(face_vector, top_k)
-        
+
         best_index = I[0][0]
-        best_distance = D[0][0]
-        
-        if best_distance > threshold:
+        best_score = D[0][0]  # Với cosine similarity: càng cao càng giống (tối đa là 1.0)
+
+        print(f"best index: {best_index}, best score: {best_score}, score list: {D}")
+
+        # Điều kiện loại: độ tương đồng thấp hoặc không rõ ràng
+        if best_score < threshold:
             return ErrorType.FACE_NOT_FOUND.value, None
-        
+
         predicted_user_id = int(self.index_to_name[best_index])
-        user = await self.user_repository.get_by_id(db = db, user_id=predicted_user_id)
-        return None, UserDTO(id = user.id, username=user.name)
+        user = await self.user_repository.get_by_id(db=db, user_id=predicted_user_id)
+        return None, UserDTO(id=user.id, username=user.name)
     
     async def generate_face_embedding_from_image(self, image_id: int, db: AsyncSession):
         error, img_content = await self.image_service.read_img_by_id(image_id=image_id, db=db)
