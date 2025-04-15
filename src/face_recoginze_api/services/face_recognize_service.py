@@ -23,8 +23,6 @@ class FaceRecognizeService:
         self.index = None
         self.index_arcface = None
         self.index_to_name = {}
-        self.arcface = insightface.app.FaceAnalysis()
-        self.arcface.prepare(ctx_id=-1)
         self.user_repository = UserRepository()
         self.embedding_repository = EmbeddingRepository()
         self.image_repository = ImageRepository()
@@ -77,7 +75,7 @@ class FaceRecognizeService:
 
         predicted_user_id = int(self.index_to_name[best_index])
         user = await self.user_repository.get_by_id(db=db, user_id=predicted_user_id)
-        return None, UserDTO(id=user.id, username=user.name)
+        return None, UserDTO(id=user.id, name=user.name)
     
     async def generate_face_embedding_from_image(self, image_id: int, db: AsyncSession):
         error, img_content = await self.image_service.read_img_by_id(image_id=image_id, db=db)

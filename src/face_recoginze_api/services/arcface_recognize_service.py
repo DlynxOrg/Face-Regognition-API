@@ -21,7 +21,7 @@ class ArcFaceRecognizeService:
         self.detector = MTCNN()
         self.index = None
         self.index_to_name = {}
-        self.arcface = insightface.app.FaceAnalysis()
+        self.arcface = insightface.app.FaceAnalysis(name="buffalo_l")
         self.arcface.prepare(ctx_id=-1)
         self.user_repository = UserRepository()
         self.embedding_repository = EmbeddingRepository()
@@ -48,7 +48,7 @@ class ArcFaceRecognizeService:
             # Ánh xạ chỉ số FAISS -> user_id
             self.index_to_name = {i: user_id for i, user_id in enumerate(self.labels)}
         
-    async def recognize_face_faiss_arcface(self, db: AsyncSession, image_id, top_k=1, threshold=0.85) -> tuple[str, UserDTO]:
+    async def recognize_face_faiss_arcface(self, db: AsyncSession, image_id, top_k=1, threshold=0.7) -> tuple[str, UserDTO]:
         """
         Tìm người gần nhất với face_vector bằng FAISS.
         Nếu khoảng cách > threshold, trả về 'Unknown'.
@@ -74,7 +74,7 @@ class ArcFaceRecognizeService:
 
         predicted_user_id = int(self.index_to_name[best_index])
         user = await self.user_repository.get_by_id(db=db, user_id=predicted_user_id)
-        return None, UserDTO(id=user.id, username=user.name)
+        return None, UserDTO(id=user.id, name=user.name)
     
 
     async def generate_face_embedding_from_image_arcface(self, image_id: int, db: AsyncSession):
@@ -83,30 +83,28 @@ class ArcFaceRecognizeService:
             return error, None
 
         try:
-            # Chuyển đổi bytes thành numpy array trước khi decode
             np_img = np.frombuffer(img_content, np.uint8)
             frame = cv.imdecode(np_img, cv.IMREAD_COLOR)
 
             if frame is None:
                 print("Error: Image decoding failed.")
-                return ErrorType.INTERNAL_SERVER_ERROR.value, None  # 🔥 Trả về None nếu ảnh không hợp lệ
+                return ErrorType.INTERNAL_SERVER_ERROR.value, None
 
             frame_rgb = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-            results = self.detector.detect_faces(frame_rgb)
+
+            faces = self.arcface.get(frame_rgb)
+            if not faces:
+                return ErrorType.NO_FACE_DETECED.value, None
+
+            if len(faces) > 1:
+                print("Warning: Multiple faces detected. Using the first one.")
+
+            embedding = faces[0].embedding
+            return None, embedding
+
         except Exception as e:
             print(f"Error processing image: {e}")
-            return ErrorType.INTERNAL_SERVER_ERROR.value
-            
-        if results:
-            # x, y, w, h = results[0]['box']
-            # face_img = frame[y: y+h, x: x+w]
-            # face_img = cv.resize(face_img, (160, 160))
-            # face_img = np.expand_dims(face_img, axis=0)
-            # embedding = self.facenet.embeddings(face_img)
-            embedding = self.arcface.get(frame_rgb)
-            embedding = embedding[0].embedding
-            return None, embedding
-        return ErrorType.NO_FACE_DETECED.value, None
+            return ErrorType.INTERNAL_SERVER_ERROR.value, None
 
     async def validate_face(self, image_id: int, db_session: AsyncSession) -> str:
         error, embedding = await self.generate_face_embedding_from_image_arcface(image_id=image_id, db=db_session)
